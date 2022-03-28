@@ -4,6 +4,6 @@ body {
 }
 .webgl {
      display: block;
-  background: url(https://threejs.org/manual/examples/resources/images/daikanyama.jpg) no-repeat center center ;
-  background-size: cover;
+ /* background: url(https://threejs.org/manual/examples/resources/images/daikanyama.jpg) no-repeat center center ;
+  background-size: cover;*/
 }
