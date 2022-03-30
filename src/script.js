@@ -4,13 +4,48 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls"; //컨
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js'; //objloader
 
 
-const playerVelocity = new THREE.Vector3(); //속도 길이 
+let cameraControls;
+
+const playerVelocity = new THREE.Vector3(); //속도 길이 얼만큼 움직일지 
 const playerDirection = new THREE.Vector3(); // 방향 
 
 const keyStates = {};
 
-const clock = new THREE.Clock();
+const clock = new THREE.Clock(); //시간을 추적하기 위한 개체
 
+// 시점번경 버튼 이벤트 추가 
+document.querySelector('.viewBtn').addEventListener('click', changeView);
+
+// 카메라를 cube위에 달아논다? 
+// cube위치랑 카메라 위치랑
+let isClick = false;
+
+function changeView(e) {
+    isClick = !isClick
+    console.log(isClick)
+    //카메라 position 큐브 position 동일? 
+    //const deltaPosition = playerVelocity.clone().multiplyScalar(deltaTime);
+
+    if (isClick) {
+        // if (cameraControls) cameraControls.dispose() //카메라뿌심
+        //target이 보여야 orbitcontrol이 가능하다!!
+        camera.position.x = cube.position.x
+        //console.log(cube.position)
+        camera.position.z = cube.position.z
+        camera.position.y = cube.position.y
+
+        // camera.lookAt(cube.position)
+        // camera.position.y = 4;
+    } else {
+        // cameraControls = new OrbitControls(camera, renderer.domElement);
+        // cameraControls.target.position = cube.position
+        camera.position.x = cube.position.x
+        camera.position.y = cube.position.y
+        camera.position.z = cube.position.z + 5
+        // cameraControls.target.position = cube.position
+    }
+
+}
 
 // event 등록 
 document.addEventListener('keydown', (event) => { //key 누를 때 
@@ -30,7 +65,7 @@ function getForwardVector() {
 
     camera.getWorldDirection(playerDirection); //(target: Vector3) 결과 vector3에 복사된다. 
     playerDirection.y = 0;
-    //방향만 필요하기 때문에 길이 최소한 하기 
+    //방향만 필요하기 때문에 길이 최소한 하기 normalize
     playerDirection.normalize();
 
     return playerDirection;
@@ -58,12 +93,10 @@ function controls(deltaTime) {
         //playerVelocity 어디로 갈지 얼만큼 갈지 
         //multiplyScalar(speedDelta) -> vector에 speedDelta:Float 곱하기 
         playerVelocity.add(getForwardVector().multiplyScalar(speedDelta));
-
     }
 
     if (keyStates['KeyS']) {
         playerVelocity.add(getForwardVector().multiplyScalar(- speedDelta));
-
     }
 
     if (keyStates['KeyA']) {
@@ -87,26 +120,26 @@ function controls(deltaTime) {
 function updatePlayer(deltaTime) {
     //멈추기 위해
     let damping = Math.exp(- 4 * deltaTime) - 1;
-    playerVelocity.addScaledVector(playerVelocity, damping);
-    const deltaPosition = playerVelocity.clone().multiplyScalar(deltaTime);
+
+    playerVelocity.addScaledVector(playerVelocity, damping); // addScaledVector(vector3, s:float) v -> playerVelocity vector에 
+
+    const deltaPosition = playerVelocity.clone().multiplyScalar(deltaTime); //playerVelocity를 복사한값에 deltaTime을 곱한다. 
     // 어디로갈지, 얼마나갈지
     //육하원칙 어디로, 얼마나, 무엇을?
     //aa console.log(deltaPosition, cube.position)
-    //cube.position.x += deltaPosition.x
+    cube.position.x += deltaPosition.x
     //console.log(cube.position)
-    // cube.position.z += deltaPosition.z
+    cube.position.z += deltaPosition.z
     camera.position.x += deltaPosition.x
     camera.position.z += deltaPosition.z
-    // console.log(deltaPosition, 'delta')
 
-
-
-
+    cameraControls.target.set(cube.position.x, 0, cube.position.z)
 
 }
 
 
 let object
+
 
 function loadModel() {
     //traverse()함수는 scene의 child항목들을 반복적으로 검사하는 기능을 수행한다
@@ -119,7 +152,7 @@ function loadModel() {
     //Math.PI 반지름  Math.PI *2 한바퀴
     object.children[0].rotation.x = 4.8
     object.scale.set(0.1, 0.1, 0.1);
-    object.position.set(2, 0, -20)
+    object.position.set(2, 0, -15)
 
     scene.add(object);
 
@@ -153,6 +186,22 @@ objLoader.load('models/obj/cat/cat.obj', function (obj) {
     object = obj;
 
 }, onProgress, onError);
+let maleObj1
+objLoader.load('models/obj/male02/male02.obj', function (obj) {
+    maleObj1 = obj
+    maleObj1.scale.set(0.03, 0.03, 0.03);
+    maleObj1.position.set(-10, 0, -10)
+    scene.add(obj)
+
+}, onProgress, onError);
+
+objLoader.load('models/obj/male02/male02.obj', function (obj) {
+    obj.scale.set(0.02, 0.02, 0.02);
+    obj.position.set(6, 0, -5)
+    scene.add(obj)
+
+}, onProgress, onError);
+
 
 // Canvas
 const canvas = document.querySelector('canvas.webgl')
@@ -170,8 +219,9 @@ const material = new THREE.MeshPhongMaterial({ color: 0xff0000 })
 
 const cube = new THREE.Mesh(geometry, material)
 scene.add(cube)
+cube.scale.set(2, 2, 2);
 cube.position.set(0, 0, 0)
-
+//cube.position.set(0, 10, 30)
 
 
 /**
@@ -188,7 +238,7 @@ const sizes = {
 //PerspectiveCamera (field of view, aspect, near, far)
 const camera = new THREE.PerspectiveCamera(70, sizes.width / sizes.height, 0.1, 1000)
 //camera.position.set(0, 50, 300); //카메라의 위치 중점에서 위로 10칸 뒤로 20칸 x,y,z
-camera.position.set(0, 2, 5)
+camera.position.set(0, 0, 5)
 camera.rotation.order = 'YXZ';
 const helper = new THREE.CameraHelper(camera);
 scene.add(helper);
@@ -209,11 +259,12 @@ scene.add(light.target);
 
 /** ground 땅 만들기*/
 const gt = new THREE.TextureLoader().load('textures/uv_grid_opengl.jpg'); //ground texture load
-const gg = new THREE.PlaneGeometry(16000, 16000); // 평평한 geometry 
+const gg = new THREE.PlaneGeometry(1000, 1000); // 평평한 geometry 
 const gm = new THREE.MeshPhongMaterial({ color: 0x0E8960, map: gt }); //재질 컬러, The color map.  map? : texture Default is null. The texture map color is modulated by the diffuse .color.
 
 const ground = new THREE.Mesh(gg, gm); // 위 geometry, material을 통해  ground mesh 생성 
 ground.rotation.x = - Math.PI / 2; // ground mesh 눕히기 
+ground.position.y = -1;
 ground.material.map.repeat.set(32, 32);
 //ground.material.map.wrapS = THREE.RepeatWrapping;
 //ground.material.map.wrapT = THREE.RepeatWrapping;
@@ -259,9 +310,15 @@ scene.background = texture1;
 
 //방향키로 움직이기 
 // OrbitControls는 특정 좌표를 중심으로 카메라를 자전 고정된 축을 중심으로 회전함 또는 공전 한 천체(天體)가 다른 천체의 둘레를 주기적으로 도는 일 을 하도록 한다.
-const cameraControls = new OrbitControls(camera, renderer.domElement);
-cameraControls.target.set(0, 0, 0);
-cameraControls.update();
+cameraControls = new OrbitControls(camera, renderer.domElement);
+// cameraControls.target.set(0, 0, 0); //control의 초점? 
+//cameraControls.update();
+
+
+//cameraControls.minDistance = 0; //얼마나 멀리 가깝게 
+//cameraControls.maxDistance = 500;
+
+// cameraControls.maxPolarAngle = Math.PI / 2; //수직으로 도는 범위 
 
 
 const axesHelper = new THREE.AxesHelper(5);
@@ -275,14 +332,19 @@ function render(time) {
 
     const deltaTime = Math.min(0.05, clock.getDelta());
     controls(deltaTime);
+    cameraControls.update()
     updatePlayer(deltaTime);
+
+
     time *= 0.001; //time -> seconds로 변환
     // cube.rotation.x = time;  //time마다 cube가 회전
     //cube.rotation.y = time;
     // object cat이 null이 아닐 때 
     if (object) object.rotation.y = time;
+    if (maleObj1) maleObj1.rotation.y = time;
     renderer.render(scene, camera)
     requestAnimationFrame(render);
+    // console.log(camera.position)
 
 
 }
