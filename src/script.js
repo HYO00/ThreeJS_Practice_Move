@@ -1,7 +1,8 @@
 import './style.css'
 import * as THREE from 'three'
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls"; //컨트롤 정의하는데 사용
-import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js'; //objloader
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js'; //obj loader
+import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js'; //material loader
 
 // Canvas
 const canvas = document.querySelector('canvas.webgl')
@@ -42,9 +43,9 @@ function changeView() {
         camera.position.z = cube.position.z
         camera.position.y = cube.position.y
     } else {
-        camera.position.x = cube.position.x
-        camera.position.y = cube.position.y + 2
-        camera.position.z = cube.position.z + 12
+        camera.position.x = cube.position.x + 15
+        camera.position.y = cube.position.y + 10
+        camera.position.z = cube.position.z + 15
     }
 
 }
@@ -107,13 +108,13 @@ function controls(deltaTime) {
         //console.log(getForwardVector().multiplyScalar(speedDelta), "who r u")
         //playerVelocity 벡터에 추가하기 - 위에서 구한 얼마큰 움직일지에 대한 값을 추가 
         //앞으로 갈 수록 벡터 z rkqtdms -값이 점점 커지고 다시 뒤로가면 z값은 +값으로 커진다. 
-        console.log(playerVelocity, "wwwwww")
+        // console.log(playerVelocity, "wwwwww")
     }
 
     if (keyStates['KeyS']) {
         //s key a key - speedDelta값을 곱하는 이유는 ? z값 음수를 양수로 바꾸기 위해 
         playerVelocity.add(getForwardVector().multiplyScalar(-speedDelta));
-        console.log(playerVelocity, "ssssss")
+        // console.log(playerVelocity, "ssssss")
     }
 
     if (keyStates['KeyA']) {
@@ -141,6 +142,9 @@ function updatePlayer(deltaTime) {
     const deltaPosition = playerVelocity.clone().multiplyScalar(deltaTime);
     // 어디로갈지, 얼마나갈지
     //육하원칙 어디로, 얼마나, 무엇을?
+    // console.log('cube', cube.position, 'car', carObj.position)
+
+
     cube.position.x += deltaPosition.x;
     cube.position.z += deltaPosition.z;
     camera.position.x += deltaPosition.x;
@@ -148,23 +152,80 @@ function updatePlayer(deltaTime) {
 
     cameraControls.target.set(cube.position.x, 0, cube.position.z)
 
+
 }
+let catArr = [];
+let cat
+//multifle loader
+const objPostion = [
+    [30, -1, -15],
+    [-18, -1, 10],
+    [0, -1, 30],
+    [9, -1, 12],
+    [-25, -1, -30]
+]
+for (let i = 0; i < 10; i++) {
+
+
+    const onProgress = function (xhr) {
+
+        if (xhr.lengthComputable) {
+
+            const percentComplete = xhr.loaded / xhr.total * 100;
+            console.log(Math.round(percentComplete, 2) + '% downloaded');
+
+        }
+
+    };
+
+    new MTLLoader()
+        .setPath('models/obj/cat/')
+        .load('12221_Cat_v1_l3.mtl', function (materials) {
+
+            materials.preload();
+
+            new OBJLoader()
+                // .setMaterials(materials)
+                .setPath('models/obj/cat/')
+                .load('cat.obj', function (object) {
+                    cat = object
+                    cat.traverse(function (child) {
+                        // console.log('cc', child)
+                        if (child.isMesh) child.material.map = texture
+                    });
+
+                    cat.children[0].rotation.x = 4.8
+                    cat.scale.set(0.7, 0.7, 0.7);
+                    //cat.position.set(...objPostion[i])
+                    object.position.x = Math.random() * 1000 - 800;
+                    object.position.y = -1;
+                    object.position.z = Math.random() * 900 - 700;
+                    catArr.push(cat)
+                    scene.add(cat);
+
+                }, onProgress);
+
+        });
+}
+
+
+
 
 //cat object 
 let catObj
 //cat obj load
 function loadModel() {
     //traverse()함수는 scene의 child항목들을 반복적으로 검사하는 기능을 수행한다
-    catObj.traverse(function (child) {
-        if (child.isMesh) child.material.map = texture;
-    });
+    //  catObj.traverse(function (child) {
+    //     if (child.isMesh) child.material.map = textureLoader.load('textures/uv_grid_opengl.jpg');
+    //});
 
     //Math.PI 반지름  Math.PI *2 한바퀴
-    catObj.children[0].rotation.x = 4.8
-    catObj.scale.set(0.1, 0.1, 0.1);
-    catObj.position.set(2, 0, -15)
+    // catObj.children[0].rotation.x = 4.8
+    //  catObj.scale.set(0.1, 0.1, 0.1);
+    //  catObj.position.set(2, 0, -15)
 
-    scene.add(catObj);
+    //   scene.add(catObj);
 
 }
 //말 그대로 로딩 매니저 
@@ -188,11 +249,12 @@ function onError() { }
 
 
 const objLoader = new OBJLoader(manager);
+/*
 objLoader.load('models/obj/cat/cat.obj', function (obj) {
 
     catObj = obj;
 
-}, onProgress, onError);
+}, onProgress, onError);*/
 let maleObj1
 objLoader.load('models/obj/male02/male02.obj', function (obj) {
 
@@ -200,33 +262,37 @@ objLoader.load('models/obj/male02/male02.obj', function (obj) {
     maleObj1.traverse(function (child) {
         if (child.isMesh) child.material.map = textureLoader.load('textures/uv_grid_opengl.jpg');;
     });
-    maleObj1.scale.set(0.02, 0.02, 0.02);
-    maleObj1.position.set(-5, 0, 5)
+    maleObj1.scale.set(0.1, 0.1, 0.1);
+    maleObj1.position.set(-30, -1, 5)
     scene.add(maleObj1)
 
 }, onProgress, onError);
 
-objLoader.load('models/obj/male02/male02.obj', function (obj) {
-    obj.traverse(function (child) {
+let legoObj
+objLoader.load('models/obj/lego/lego obj.obj', function (obj) {
+    legoObj = obj
+    legoObj.traverse(function (child) {
         if (child.isMesh) child.material.map = textureLoader.load('textures/uv_grid_opengl.jpg');;
     });
-    obj.scale.set(0.02, 0.02, 0.02);
-    obj.position.set(6, 0, -5)
-    scene.add(obj)
+    legoObj.rotation.y = 0.5
+    legoObj.scale.set(0.5, 0.5, 0.5);
+    legoObj.position.set(0, -1, -20)
+    scene.add(legoObj)
 
 }, onProgress, onError);
-let ironMan
-objLoader.load('models/obj/IronMan/IronMan.obj', function (obj) {
+//let ironMan
+/*objLoader.load('models/obj/IronMan/IronMan.obj', function (obj) {
     ironMan = obj
-    ironMan.traverse(function (child) {
-        if (child.isMesh) child.material.map = textureLoader.load('textures/uv_grid_opengl.jpg');;
-    });
+    // ironMan.traverse(function (child) {
+    //    if (child.isMesh) child.material.map = textureLoader.load('textures/uv_grid_opengl.jpg');;
+    // });
     ironMan.scale.set(0.03, 0.03, 0.03);
     ironMan.position.set(-10, 0, -10)
+
     scene.add(ironMan)
 
 }, onProgress, onError)
-
+*/
 
 
 /* Object*/
@@ -236,7 +302,7 @@ const material = new THREE.MeshPhongMaterial({ color: 0xff0000 })
 
 const cube = new THREE.Mesh(geometry, material)
 scene.add(cube)
-cube.scale.set(3, 3, 3);
+cube.scale.set(10, 10, 10);
 cube.position.set(0, 0, 0)
 
 
@@ -247,18 +313,18 @@ cube.position.set(0, 0, 0)
 */
 //PerspectiveCamera (field of view, aspect, near, far)
 const camera = new THREE.PerspectiveCamera(70, sizes.width / sizes.height, 0.1, 1000)
-camera.position.set(0, 3, 12)  //카메라의 위치 중점에서 위로 3칸 뒤로 9칸 x,y,z
+camera.position.set(15, 10, 15)  //카메라의 위치 중점에서 위로 3칸 뒤로 9칸 x,y,z
 camera.rotation.order = 'YXZ';
 scene.add(camera)
-const helper = new THREE.CameraHelper(camera);
-scene.add(helper);
+//const helper = new THREE.CameraHelper(camera);
+//scene.add(helper);
 
 
 
 
 /**
  * Light
- */
+*/
 const color = 0xFFFFFF;
 const intensity = 1;
 const light = new THREE.DirectionalLight(color, intensity); //target이 있는 방향으로 빛을 쬔다. ㄴ
@@ -267,15 +333,16 @@ light.target.position.set(-5, 0, 0);
 scene.add(light);
 scene.add(light.target);
 
+
 /** ground 땅 만들기*/
 const gt = new THREE.TextureLoader().load('textures/uv_grid_opengl.jpg'); //ground texture load
-const gg = new THREE.PlaneGeometry(100, 100); // 평평한 geometry 
-const gm = new THREE.MeshPhongMaterial({ color: 0x0E8960, map: gt }); //재질 컬러, The color map.  map? : texture Default is null. The texture map color is modulated by the diffuse .color.
+const gg = new THREE.PlaneGeometry(1600, 1600); // 평평한 geometry 
+const gm = new THREE.MeshPhongMaterial({ color: 0xF1C232 }); //재질 컬러, The color map.  map? : texture Default is null. The texture map color is modulated by the diffuse .color.
 
 const ground = new THREE.Mesh(gg, gm); // 위 geometry, material을 통해  ground mesh 생성 
 ground.rotation.x = - Math.PI / 2; // ground mesh 눕히기 
 ground.position.y = -1;
-ground.material.map.repeat.set(32, 32);
+//ground.material.map.repeat.set(32, 32);
 ground.receiveShadow = true;
 
 scene.add(ground);
@@ -323,9 +390,9 @@ cameraControls = new OrbitControls(camera, renderer.domElement);
 // cameraControls.maxPolarAngle = Math.PI / 2; //수직으로 도는 범위 
 
 
-const axesHelper = new THREE.AxesHelper(5);
-axesHelper.setColors(new THREE.Color('red'), new THREE.Color('skyblue'), new THREE.Color('green'))
-scene.add(axesHelper);
+//const axesHelper = new THREE.AxesHelper(5);
+//axesHelper.setColors(new THREE.Color('red'), new THREE.Color('skyblue'), new THREE.Color('green'))
+//scene.add(axesHelper);
 
 
 
@@ -334,7 +401,7 @@ function render(time) {
 
     const deltaTime = Math.min(0.05, clock.getDelta());
     controls(deltaTime);
-    //ameraControls.update() //mouse로 인해 변경된 가메라값을 업데이트 ?
+    cameraControls.update() //mouse로 인해 변경된 가메라값을 업데이트 ?
     //update를 하지 않으면  mouse로 변경된 값을 그대로 가져간다. 
     //update를 하면 내가 보고 있던 위를 보고 있더라도 시점변경을 했을 때 다시 앞을 바라본다. 
     updatePlayer(deltaTime);
@@ -344,9 +411,11 @@ function render(time) {
     // cube.rotation.x = time;  //time마다 cube가 회전
     //cube.rotation.y = time;
     // object cat이 null이 아닐 때 
-    if (catObj) catObj.rotation.y = time;
+    catArr.forEach((el) => el.rotation.y = time)
+    if (cat) cat.rotation.y = time;
+    if (legoObj) legoObj.rotation.y = time;
     if (maleObj1) maleObj1.rotation.y = time;
-    if (ironMan) ironMan.rotation.y = time;
+    //  if (ironMan) ironMan.rotation.y = time;
     renderer.render(scene, camera)
     requestAnimationFrame(render);
     // console.log(camera.position)
